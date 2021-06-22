@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <title>WebGIS</title>
+    <style>
+      html,
+      body,
+      #viewDiv {
+        padding: 0;
+        margin: 0;
+        height: 100%;
+        width: 100%;
+      }
+
+      #titleDiv {
+        padding: 10px;
+      }
+
+      #titleText {
+        font-size: 20pt;
+        font-weight: 60;
+        padding-bottom: 10px;
+      }
+
+      /* Style the buttons inside the tab */
+      .tab button {
+        background-color: rgb(0, 174, 255);
+        float: left;
+        border: none;
+        outline: none;
+        cursor: pointer;
+        padding: 14px 16px;
+        transition: 0.3s;
+        font-size: 15px;
+      }
+
+      /* Change background color of buttons on hover */
+      .tab button:hover {
+        background-color: #ddd;
+      }
+
+      /* Create an active/current tablink class */
+      .tab button.active {
+        background-color: #fff;
+      }
+
+      /* Style the tab content */
+      .tabcontent {
+        background-color: #fff;
+        display: none;
+        padding: 6px 12px;
+        border: 1px solid #ccc;
+        border-top: none;
+        font-size: 20px;
+      }
+
+    </style>
+    <link rel="stylesheet" href="https://js.arcgis.com/4.14/esri/themes/light/main.css" />
+    <script src="https://js.arcgis.com/4.14/"></script>
+    <script>
+      require(["esri/Map", 
+      "esri/views/MapView",
+      "esri/layers/FeatureLayer",
+      "esri/widgets/Legend",
+      "esri/widgets/LayerList",
+      "esri/widgets/Search",
+      "esri/widgets/Home",
+      "esri/widgets/Fullscreen",
+      "esri/widgets/ScaleBar"
+,
+
+
+
+      "esri/widgets/Sketch",
+      "esri/layers/GraphicsLayer","esri/Graphic",
+      "esri/widgets/BasemapToggle",
+      "esri/widgets/BasemapGallery"], 
+      function(Map,
+        MapView,
+        FeatureLayer,
+        Legend,
+        LayerList,
+        Search,
+        Home,
+        Fullscreen,
+        ScaleBar,
+        Sketch,GraphicsLayer,Graphic,
+        BasemapToggle,
+        BasemapGallery
+       )
+       {
+          var map = new Map({
+            basemap: "topo"	// topo, osm, streets... https://developers.arcgis.com/javascript/3/jsapi/esri.basemaps-amd.html or https://developers.arcgis.com/javascript/latest/api-reference/esri-Map.html
+          });
+          var view = new MapView({
+            container: "viewDiv", 
+            map: map, 
+            zoom: 6, 
+            center: [30, 15] // Sets center point of view using longitude,latitude
+          });
+          //---------Toggle Basemap----------------------
+          var basemapToggle = new BasemapToggle({
+            view: view,
+            nextBasemap: "satellite"
+          });
+          view.ui.add(basemapToggle, "bottom-right");
+          //---------Add layers----------------------
+          var layerRenderer = 
+        {
+          type: "simple",  
+          symbol: 
+          {
+            type: "simple-fill",  
+            outline: 
+            {  
+              width: 1,
+              color: "gray"
+            }
+          },
+
+          visualVariables: 
+          [
+            {
+              type: "color",
+              field: "Total_Pop",
+              stops: 
+              [
+                { value: 11000, color: "#FFF000" },
+                { value: 1000000, color: "#FF2B00" },
+              ],
+            }
+          ]
+        }
+        var points = new FeatureLayer({
+        url: "https://services6.arcgis.com/nEMEkLg8rZV7Ijyb/ArcGIS/rest/services/SudanMap/FeatureServer" 
+      });
+      var polygons = new FeatureLayer({
+        url: "https://services6.arcgis.com/nEMEkLg8rZV7Ijyb/ArcGIS/rest/services/SudanMap/FeatureServer/2",
+        renderer: layerRenderer 
+      });
+      map.addMany([polygons,points]);
+                
+        //--------- Watching MapView ----------------------
+        view.focus();
+        view.on("key-down", function(evt){
+        if (evt.key === "m"){
+        var menuStatus = document.getElementById("menu").style;
+        if(menuStatus.display === "none")
+        menuStatus.display = "block";
+        else
+        menuStatus.display = "none";
+        }
+ });//========== view watch =============
+
+        //---------- Legend ---------------------------
+        var legend = new Legend({
+        view: view,
+        layerInfos: [
+        {
+        layer: polygons,
+        title: "LOCALITIES"
+        },
+        {
+        layer: points,
+        title: "SETTLEMENTS"
+        }]
+        });
+        const legendCheck = document.getElementById('legendCheck');
+        legendCheck.addEventListener('change', (event) => {
+        if (event.target.checked) {
+        view.ui.add(legend, "bottom-left");
+        } else {
+        view.ui.remove(legend);
+        }
+        });
+
+
+
+
+        //---------- 1 ---------------------------
+        var searchWidget = new Search({
+ view: view
+ });
+ view.ui.add(searchWidget, {
+ position: "top-right",
+ });
+       //---------- 2 ---------------------------
+       var homeWidget = new Home({
+ view: view
+ });
+ view.ui.add(homeWidget, "top-left");
+        //---------- 3 ---------------------------
+        fullscreen = new Fullscreen({
+ view: view
+ });
+ view.ui.add(fullscreen, "top-left");
+         //---------- 4 ---------------------------
+         var scaleBar = new ScaleBar({
+ view: view,
+ style:"rulre",
+
+ unit:"metric"
+ 
+ });
+ view.ui.add(scaleBar, {
+ position: "top-left"
+ });
+
+
+
+
+
+     
+          
+        //--------- LayerList -------------------------- 
+        var layerList = new LayerList({
+        view: view
+        });
+        const layerListCheck = document.getElementById('layerListCheck');
+        layerListCheck.addEventListener('change', (event) => {
+        if (event.target.checked) {
+        
+        view.ui.add(layerList, "bottom-left");
+        } else {
+        view.ui.remove(layerList);
+        }
+        });
+                  
+
+        //--------- Add Layer ----------------------   
+        document.getElementById("addLayer").onclick = addLayerFun;
+        function addLayerFun() {
+        var featureLayer = new FeatureLayer({
+        url: document.getElementById("layerURL").value
+        });
+        map.add(featureLayer);
+        }
+          
+
+        //--------- Symbology  ----------------------  
+        document.getElementById("changeStyle").onclick = changeStyleFun;
+        function changeStyleFun() {
+        var firstColor = document.getElementById('color1').value;
+        var secondColor = document.getElementById('color2').value;
+        layerRenderer.visualVariables = [{
+          type: "color",
+              field: "Total_Pop",
+              stops: 
+              [
+                { value: 11000, color: firstColor },
+                { value: 1000000, color: secondColor },
+              ],
+        
+        }];
+        polygons.renderer = layerRenderer
+        
+        } 
+        
+          
+            
+        //--------- Spatial Query  ----------------------
+        const queryLayer = new GraphicsLayer();
+        const sketch = new Sketch({
+        layer: queryLayer,
+        view: view,
+        availableCreateTools: ["polygon"],
+        creationMode: "single",
+        });
+        document.getElementById("startQuery").onclick = startQueryFun;
+        function startQueryFun() {
+        map.add(queryLayer);
+        view.ui.add(sketch, "top-left");
+        
+        sketch.on("create", function(event) {
+        if (event.state === "complete") {
+          queryLayer.remove(event.graphic);
+          view.Graphics.removeAll();
+        queryFun(event.graphic.geometry);
+        }
+        });
+        }//=========startQueryFun =================
+        function queryFun(geom) {
+ var query = polygons.createQuery();
+ query.geometry = geom; 
+ query.spatialRelationship = "intersects";
+ query.returnGeometry = true;
+ polygons.queryFeatures(query)
+ .then(function(response){
+ var geometriesArray = response.features.map(function(feature) {
+ return feature.geometry;
+ });
+ 
+ const fillSymbol = {
+ type: "simple-fill",
+ color: [250, 250, 250],
+ 
+ };
+ geometriesArray.forEach(drawResultFun);
+ function drawResultFun(geom)
+ { 
+ var polygonGraphic = new Graphic({
+ geometry: geom,
+ symbol: fillSymbol
+ });
+ view.graphics.add(polygonGraphic);
+ }
+ });
+ }//========= queryFun =================
+          
+          
+        view.ui.add("titleDiv", "top-right");
+        view.ui.add("menu", "top-right");
+        });//======= Require ==============
+        
+
+        
+        //--------- Menu Taps ----------------------                
+        function switchTap(evt, tapName) {
+          var i, tabcontent, tablinks;
+          tabcontent = document.getElementsByClassName("tabcontent");
+          for (i = 0; i < tabcontent.length; i++) {
+            tabcontent[i].style.display = "none";
+          }
+          tablinks = document.getElementsByClassName("tablinks");
+          for (i = 0; i < tablinks.length; i++) {
+            tablinks[i].className = tablinks[i].className.replace(" active", "");
+          }
+          document.getElementById(tapName).style.display = "block";
+          evt.currentTarget.className += " active";
+        }
+       
+    </script>
+  </head>
+  <body>
+    <div id="viewDiv"></div>
+    <div id="titleDiv" class="esri-widget">
+      <div id="titleText"> WebGIS </div>
+      <div>Press the  M to hide or show the bluebar</div>
+    </div>
+    <div id="menu" class="tab">
+      <button class="tablinks" onclick="switchTap(event, 'mapElements')">Map Elements</button>
+      <button class="tablinks" onclick="switchTap(event, 'Add Layer')">Add Layer</button>
+      <button class="tablinks" onclick="switchTap(event, 'symbology')">Symbology</button>
+      <button class="tablinks" onclick="switchTap(event, 'spatialQuery')">Spatial Query</button>
+      <div id="mapElements" class="tabcontent">
+        <p><input type="checkbox" id="legendCheck" >Legend</p>
+        <p><input type="checkbox" id="layerListCheck" >layerList</p>
+      </div>
+      
+      <div id="Add Layer" class="tabcontent">
+        <h3>Insert Featurelayer URL</h3>
+        <input  id="layerURL" class="esri-widget esri-input" style="height:30px;width: 100%;" placeholder="Enter population"></input>
+        <button id="addLayer" style="width: 100%;">ADD</button>
+        <p>insert url and click add</p> 
+      </div>
+      
+      <div id="symbology" class="tabcontent">
+        <p><input type="color" id="color1"  value="#FFF000"> First Color</p>
+        <p><input type="color" id="color2"  value="#FF2B00"> Second Color</p>
+        <button id="changeStyle" style="width: 100%;">Change Style</button><br><br>
+      </div>
+      
+      <div id="spatialQuery" class="tabcontent">
+        <h3>Spatial Query</h3>
+        <button id="startQuery" style="width: 100%;">Start Querying</button><br><br>
+      </div>
+    </div>
+    <script>
+    </script>
+    
+
+
+  </body>
+</html>
